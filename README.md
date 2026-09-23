@@ -100,3 +100,5 @@ Las pruebas corren también en la integración continua (pestaña Actions). Desd
 docs/ficha_negocio.md   → ficha del negocio (se entrega antes del día A de la semana 3)
 main.go                 → punto de entrada del servidor
 ```
+
+* Luis Manuel Anzules (Integrado)
