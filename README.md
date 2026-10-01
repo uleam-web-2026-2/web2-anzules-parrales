@@ -1,3 +1,49 @@
+# Servidor Mínimo - Taller de Montaje de Entorno
+
+Proyecto base desarrollado para la asignatura Aplicaciones Web II / Aplicación para el Servidor Web (ULEAM 2026-2).
+
+---
+
+## 👥 Integrantes
+* **Dhylan Ariel Parrales Pachay**
+* **LUIS ANZULES**
+
+**Paralelo:** Web II (2026-2)  
+**Repositorio:** `web2-anzules-parrales`
+
+---
+
+## 🛠️ Requisitos Previos
+
+1. **Go:** Versión 1.25 o superior instalada.
+2. **PostgreSQL:**
+   * **Opción elegida:** Instalación nativa (PostgreSQL 18).
+   * **Puerto:** `5432`
+   * **Usuario:** `postgres`
+   * **Base de datos requerida:** `mesa_ayuda`
+
+---
+
+## ⚙️ Configuración de la Base de Datos
+
+Antes de ejecutar el servidor, asegúrate de tener creada la base de datos:
+
+1. Abrir **pgAdmin** o la consola SQL de PostgreSQL (`psql`).
+2. Crear la base de datos del curso ejecutando:
+   ```sql
+   CREATE DATABASE mesa_ayuda;
+
+
+
+
+
+
+
+
+
+
+
+
 # [Nombre del producto]
 
 > Reemplacen todo lo que está entre corchetes en su primer commit.
@@ -54,3 +100,5 @@ Las pruebas corren también en la integración continua (pestaña Actions). Desd
 docs/ficha_negocio.md   → ficha del negocio (se entrega antes del día A de la semana 3)
 main.go                 → punto de entrada del servidor
 ```
+
+* Luis Manuel Anzules (Integrado)
