@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: BitFamily API
+  version: 1.0.0
+  description: API para la gestión de tareas y recompensas familiares.
+servers:
+  - url: http://localhost:8080
+paths:
+  /login:
+    post:
+      summary: Iniciar sesión y obtener token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usuario:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK - Retorna el token de acceso
+        '400':
+          description: Petición inválida
+
+  /categorias:
+    get:
+      summary: Listar categorías
+      operationId: listarCategorias
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: No autorizado (sin token)
+
+  /tareas:
+    get:
+      summary: Listar tareas
+      operationId: listarTareas
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: No autorizado
+    post:
+      summary: Crear tarea
+      operationId: crearTarea
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TareaInput'
+      responses:
+        '201':
+          description: Creado con éxito
+        '401':
+          description: No autorizado
+        '403':
+          description: Prohibido (sin permisos de rol)
+
+  /tareas/{id}:
+    get:
+      summary: Ver tarea por ID
+      operationId: verTareaPorId
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: No autorizado
+        '404':
+          description: No encontrado
+    put:
+      summary: Actualizar tarea
+      operationId: actualizarTarea
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Actualizado
+        '401':
+          description: No autorizado
+        '403':
+          description: Prohibido
+    patch:
+      summary: Cambiar estado de la tarea
+      operationId: cambiarEstadoTarea
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Estado cambiado con éxito
+        '401':
+          description: No autorizado
+        '403':
+          description: Prohibido (rol incorrecto)
+        '422':
+          description: Transición de estado prohibida
+
+  # Endpoints marcados como (plan) según la rúbrica del Hito 2
+  /recompensas:
+    get:
+      summary: Listar recompensas (plan)
+      operationId: listarRecompensasPlan
+      responses:
+        '200':
+          description: OK
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    TareaInput:
+      type: object
+      properties:
+        categoria_id:
+          type: integer
+        descripcion:
+          type: string
+        recompensa:
+          type: integer
