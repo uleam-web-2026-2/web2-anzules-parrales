@@ -6,12 +6,13 @@ type Categoria struct {
 	Tareas []Tarea `json:"tareas,omitempty"`
 }
 
+// Fase 2: La entidad ya no tiene etiquetas json
 type Tarea struct {
-	ID          uint   `json:"id"`
-	CategoriaID uint   `json:"categoria_id"`
-	Descripcion string `json:"descripcion"`
-	Recompensa  int    `json:"recompensa"`
-	Estado      string `json:"estado"`
+	ID          uint
+	CategoriaID uint
+	Descripcion string
+	Recompensa  int
+	Estado      string
 }
 
 var EstadosValidos = map[string]bool{

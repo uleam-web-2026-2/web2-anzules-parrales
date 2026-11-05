@@ -9,9 +9,7 @@ func (s *Servicio) Borrar(id uint) error { return s.repo.Borrar(id) }
 func (s *Servicio) ListarCategorias() ([]Categoria, error) { return s.repo.ListarCategorias() }
 
 func (s *Servicio) Crear(t Tarea) (Tarea, error) {
-	if t.Estado == "" {
-		t.Estado = "pendiente"
-	}
+	t.Estado = "pendiente" // Fase 2: siempre se fija inicial
 	if msj := validar(t); msj != "" { return t, fmt.Errorf("%w: %s", ErrInvalido, msj) }
 	
 	existe, err := s.repo.ExisteCategoria(t.CategoriaID)
@@ -23,9 +21,7 @@ func (s *Servicio) Crear(t Tarea) (Tarea, error) {
 }
 
 func (s *Servicio) Actualizar(id uint, cambios Tarea) (Tarea, error) {
-	if msj := validar(cambios); msj != "" {
-		return Tarea{}, fmt.Errorf("%w: %s", ErrInvalido, msj)
-	}
+	if msj := validar(cambios); msj != "" { return Tarea{}, fmt.Errorf("%w: %s", ErrInvalido, msj) }
 	t, err := s.repo.Buscar(id)
 	if err != nil { return t, err }
 	

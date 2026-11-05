@@ -43,18 +43,20 @@ func leerID(r *http.Request) (uint, bool) {
 func (m *Tareas) listar(w http.ResponseWriter, r *http.Request) {
 	lista, err := m.Servicio.Listar(r.URL.Query().Get("estado"))
 	if err != nil { responderError(w, err); return }
-	respuesta.JSON(w, http.StatusOK, lista)
+	var res []TareaRespuesta
+	for _, t := range lista { res = append(res, nuevaRespuesta(t)) }
+	respuesta.JSON(w, http.StatusOK, res)
 }
 
 func (m *Tareas) crear(w http.ResponseWriter, r *http.Request) {
-	var t tareas.Tarea
-	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+	var p TareaPeticion
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		respuesta.Error(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}
-	creado, err := m.Servicio.Crear(t)
+	creado, err := m.Servicio.Crear(p.aEntidad())
 	if err != nil { responderError(w, err); return }
-	respuesta.JSON(w, http.StatusCreated, creado)
+	respuesta.JSON(w, http.StatusCreated, nuevaRespuesta(creado))
 }
 
 func (m *Tareas) verUna(w http.ResponseWriter, r *http.Request) {
@@ -62,19 +64,19 @@ func (m *Tareas) verUna(w http.ResponseWriter, r *http.Request) {
 	if !ok { respuesta.Error(w, http.StatusBadRequest, "id inválido"); return }
 	t, err := m.Servicio.Buscar(id)
 	if err != nil { responderError(w, err); return }
-	respuesta.JSON(w, http.StatusOK, t)
+	respuesta.JSON(w, http.StatusOK, nuevaRespuesta(t))
 }
 
 func (m *Tareas) actualizar(w http.ResponseWriter, r *http.Request) {
 	id, ok := leerID(r)
 	if !ok { respuesta.Error(w, http.StatusBadRequest, "id inválido"); return }
-	var cambios tareas.Tarea
-	if err := json.NewDecoder(r.Body).Decode(&cambios); err != nil {
+	var p TareaPeticion
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		respuesta.Error(w, http.StatusBadRequest, "JSON inválido"); return
 	}
-	t, err := m.Servicio.Actualizar(id, cambios)
+	t, err := m.Servicio.Actualizar(id, p.aEntidad())
 	if err != nil { responderError(w, err); return }
-	respuesta.JSON(w, http.StatusOK, t)
+	respuesta.JSON(w, http.StatusOK, nuevaRespuesta(t))
 }
 
 func (m *Tareas) cambiarEstado(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +90,7 @@ func (m *Tareas) cambiarEstado(w http.ResponseWriter, r *http.Request) {
 	}
 	t, err := m.Servicio.CambiarEstado(id, pedido.Estado)
 	if err != nil { responderError(w, err); return }
-	respuesta.JSON(w, http.StatusOK, t)
+	respuesta.JSON(w, http.StatusOK, nuevaRespuesta(t))
 }
 
 func (m *Tareas) borrar(w http.ResponseWriter, r *http.Request) {
