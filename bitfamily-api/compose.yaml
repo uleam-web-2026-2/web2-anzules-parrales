@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16
+    container_name: bitfamily-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dhylan12
+      POSTGRES_DB: bitfamily
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: bitfamily-api-compose
+    ports:
+      - "8090:8090"
+    environment:
+      - DATABASE_URL=host=db user=postgres password=dhylan12 dbname=bitfamily port=5432
+      - CLAVE_FIRMA=super_secreto_bitfamily
+      - PUERTO=8090
+      - TIEMPO_ESPERA_SEGUNDOS=5
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
