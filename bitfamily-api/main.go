@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"bitfamily-api/internal/almacen"
 	"bitfamily-api/internal/tareas"
@@ -15,8 +16,13 @@ import (
 )
 
 func main() {
-	// Reemplaza esto con tu URL de conexión real de PostgreSQL
-	dsn := "host=localhost user=postgres password=dhylan12 dbname=bitfamily port=5432 sslmode=disable"
+	// 1. Leemos la cadena de conexión desde las variables de entorno
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Fatal("configuración: falta DATABASE_URL")
+	}
+
+	// 2. Conectamos a la base de datos
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("no se pudo conectar: ", err)
@@ -30,6 +36,7 @@ func main() {
 	// Semilla básica obligatoria para probar
 	db.FirstOrCreate(&tareas.Categoria{ID: 1, Nombre: "Hogar"})
 
+	// 3. Rutas y Middlewares
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -45,6 +52,12 @@ func main() {
 	servicio := tareas.NuevoServicio(repo)
 	(&transporte.Tareas{Servicio: servicio}).Rutas(r)
 
-	log.Println("Servidor escuchando en el puerto 8080...")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	// 4. Leemos el puerto desde las variables de entorno
+	puerto := os.Getenv("PUERTO")
+	if puerto == "" {
+		puerto = "8080" // Valor por defecto
+	}
+
+	log.Println("escuchando en el puerto", puerto)
+	log.Fatal(http.ListenAndServe(":"+puerto, r))
 }
