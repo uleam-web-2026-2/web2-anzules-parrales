@@ -1,4 +1,14 @@
 # Decisiones de Arquitectura – BitFamily API
+## Semana 13 los avisos en tiempo real
+
+### D1 Por qué WebSocket y no SSE ni sondeo
+En `bitfamily-api` avisamos cuando cambia el estado de una `Tarea` (`estado_cambiado`), en un flujo principalmente desde el servidor hacia el cliente conectado. El sondeo (`polling`) no basta porque obliga a consultar periódicamente y retrasa el aviso según el intervalo configurado; SSE (`Server-Sent Events`) es unidireccional y depende de `EventSource` del navegador, mientras que WebSocket (`github.com/coder/websocket`) funciona de forma bidireccional y tiene soporte estándar en clientes web, móviles o de escritorio. Lo que nos cuesta el WebSocket es mantener conexiones abiertas en memoria, sincronizar el mapa de canales con `sync.Mutex` y validar token y origen en el *handshake*.
+
+### D2 Quién recibe cada aviso
+La llave del mapa `canales` en `Avisos` (`internal/transporte/avisos.go`) es el identificador/dueño (`string`) de quien le corresponde el aviso, y el dueño del registro sale del campo `Dueno` de `tareas.Tarea` (tomado del token/sesión al crear y no del cuerpo). Para que coincidan, tanto al registrar el canal en `Conectar` como al llamar `s.avisos.Enviar(res.Dueno, ...)` en `internal/tareas/servicio.go` (después de `s.repo.Guardar(&res)`), se usa el mismo valor de dueño. Si una conexión está lenta, el `select` con `default` en `Enviar` descarta ese aviso puntual para no bloquear al resto de suscriptores; si hubiera dos copias de la API, cada instancia tendría su propio mapa en memoria y los avisos no cruzarían entre instancias sin un bus/broker compartido.
+
+### D3 El token en la dirección
+La ruta `GET /ws` va fuera del guardia de cabecera `Authorization` porque el API WebSocket estándar del navegador no permite enviar cabeceras arbitrarias de autenticación al abrir el socket, y el token viaja en la query (`?token=...`). Revisamos el token antes de `websocket.Accept` para responder `401` con `respuesta.Error` sin abrir el socket si falta o es inválido, y luego `Accept` valida `OriginPatterns` con `origenFront` (`http://localhost:5173`) para devolver `403` si el origen no coincide. El origen sigue siendo necesario aunque haya token para prevenir conexiones *cross-site* desde orígenes no autorizados. En `docs/taller13/logs_avisos.txt` el token queda registrado en la URL de la petición `GET /ws?token=...` (por lo que se reemplaza por `token=BORRADO` antes del commit), y si un token venciera mientras la conexión ya está abierta, el socket ya aceptado no se corta automáticamente hasta que se cierre o se revalide en una nueva conexión.
 ## Semana 12 la seguridad de la API
 
 ### D1 Lo que encontramos y cerramos

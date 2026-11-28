@@ -34,8 +34,6 @@
     const WS_BASE = "ws://localhost:8090";
 
     let socket = null;
-    let reconectarTimer = null;
-    let cierreManual = false;
 
     const selUsuario = document.getElementById("usuario");
     const estadoWs = document.getElementById("estadoWs");
@@ -52,7 +50,10 @@
         const res = await fetch(`${API_BASE}/tareas`);
         const data = await res.json();
         const filtradas = Array.isArray(data)
-          ? data.filter((t) => !t.dueno || t.dueno === selUsuario.value)
+          ? data.filter((t) => {
+              const dueno = t.dueno ?? t.Dueno;
+              return !dueno || dueno === selUsuario.value;
+            })
           : data;
         listaTareas.textContent = JSON.stringify(filtradas, null, 2);
       } catch (err) {
@@ -60,23 +61,9 @@
       }
     }
 
-    function programarReconexion() {
-      if (cierreManual || reconectarTimer) return;
-      reconectarTimer = setTimeout(() => {
-        reconectarTimer = null;
-        conectar();
-      }, 2000);
-    }
-
     function conectar() {
-      clearTimeout(reconectarTimer);
-      reconectarTimer = null;
-      cierreManual = false;
-
       if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-        cierreManual = true;
         socket.close();
-        cierreManual = false;
       }
 
       const token = `token-${selUsuario.value}`;
@@ -93,8 +80,9 @@
       socket.onmessage = (event) => {
         try {
           const aviso = JSON.parse(event.data);
-          if (aviso.dueno && aviso.dueno !== selUsuario.value) {
-            log(`Aviso ignorado por dueño (${aviso.dueno}): ${event.data}`);
+          const duenoAviso = aviso.dueno ?? aviso.Dueno;
+          if (duenoAviso && duenoAviso !== selUsuario.value) {
+            log(`Aviso ignorado por dueño (${duenoAviso}): ${event.data}`);
             return;
           }
           log(`Aviso recibido: ${event.data}`);
@@ -107,7 +95,6 @@
       socket.onclose = (ev) => {
         estadoWs.textContent = "Desconectado";
         log(`Conexión cerrada (código ${ev.code})`);
-        programarReconexion();
       };
 
       socket.onerror = () => {
@@ -115,18 +102,9 @@
       };
     }
 
-    document.getElementById("btnConectar").addEventListener("click", () => {
-      cierreManual = true;
-      if (socket) socket.close();
-      conectar();
-    });
-
+    document.getElementById("btnConectar").addEventListener("click", conectar);
     document.getElementById("btnRefrescar").addEventListener("click", refrescarTareas);
-    selUsuario.addEventListener("change", () => {
-      cierreManual = true;
-      if (socket) socket.close();
-      conectar();
-    });
+    selUsuario.addEventListener("change", conectar);
 
     refrescarTareas();
     conectar();
