@@ -1,16 +1,21 @@
 package transporte
+
 import (
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"strconv"
+
 	"bitfamily-api/internal/respuesta"
 	"bitfamily-api/internal/tareas"
+
 	"github.com/go-chi/chi/v5"
 )
 
-type Tareas struct { Servicio *tareas.Servicio }
+type Tareas struct {
+	Servicio *tareas.Servicio
+}
 
 func (m *Tareas) Rutas(r chi.Router) {
 	r.Get("/categorias", m.listarCategorias)
@@ -36,15 +41,22 @@ func responderError(w http.ResponseWriter, err error) {
 
 func leerID(r *http.Request) (uint, bool) {
 	n, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil || n <= 0 { return 0, false }
+	if err != nil || n <= 0 {
+		return 0, false
+	}
 	return uint(n), true
 }
 
 func (m *Tareas) listar(w http.ResponseWriter, r *http.Request) {
 	lista, err := m.Servicio.Listar(r.URL.Query().Get("estado"))
-	if err != nil { responderError(w, err); return }
+	if err != nil {
+		responderError(w, err)
+		return
+	}
 	var res []TareaRespuesta
-	for _, t := range lista { res = append(res, nuevaRespuesta(t)) }
+	for _, t := range lista {
+		res = append(res, nuevaRespuesta(t))
+	}
 	respuesta.JSON(w, http.StatusOK, res)
 }
 
@@ -55,53 +67,85 @@ func (m *Tareas) crear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	creado, err := m.Servicio.Crear(p.aEntidad())
-	if err != nil { responderError(w, err); return }
+	if err != nil {
+		responderError(w, err)
+		return
+	}
 	respuesta.JSON(w, http.StatusCreated, nuevaRespuesta(creado))
 }
 
 func (m *Tareas) verUna(w http.ResponseWriter, r *http.Request) {
 	id, ok := leerID(r)
-	if !ok { respuesta.Error(w, http.StatusBadRequest, "id inválido"); return }
+	if !ok {
+		respuesta.Error(w, http.StatusBadRequest, "id inválido")
+		return
+	}
 	t, err := m.Servicio.Buscar(id)
-	if err != nil { responderError(w, err); return }
+	if err != nil {
+		responderError(w, err)
+		return
+	}
 	respuesta.JSON(w, http.StatusOK, nuevaRespuesta(t))
 }
 
 func (m *Tareas) actualizar(w http.ResponseWriter, r *http.Request) {
 	id, ok := leerID(r)
-	if !ok { respuesta.Error(w, http.StatusBadRequest, "id inválido"); return }
+	if !ok {
+		respuesta.Error(w, http.StatusBadRequest, "id inválido")
+		return
+	}
 	var p TareaPeticion
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		respuesta.Error(w, http.StatusBadRequest, "JSON inválido"); return
+		respuesta.Error(w, http.StatusBadRequest, "JSON inválido")
+		return
 	}
 	t, err := m.Servicio.Actualizar(id, p.aEntidad())
-	if err != nil { responderError(w, err); return }
+	if err != nil {
+		responderError(w, err)
+		return
+	}
 	respuesta.JSON(w, http.StatusOK, nuevaRespuesta(t))
 }
 
 func (m *Tareas) cambiarEstado(w http.ResponseWriter, r *http.Request) {
 	id, ok := leerID(r)
-	if !ok { respuesta.Error(w, http.StatusBadRequest, "id inválido"); return }
+	if !ok {
+		respuesta.Error(w, http.StatusBadRequest, "id inválido")
+		return
+	}
 	var pedido struct {
 		Estado string `json:"estado"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&pedido); err != nil {
-		respuesta.Error(w, http.StatusBadRequest, "JSON inválido"); return
+		respuesta.Error(w, http.StatusBadRequest, "JSON inválido")
+		return
 	}
 	t, err := m.Servicio.CambiarEstado(id, pedido.Estado)
-	if err != nil { responderError(w, err); return }
+	if err != nil {
+		responderError(w, err)
+		return
+	}
 	respuesta.JSON(w, http.StatusOK, nuevaRespuesta(t))
 }
 
 func (m *Tareas) borrar(w http.ResponseWriter, r *http.Request) {
 	id, ok := leerID(r)
-	if !ok { respuesta.Error(w, http.StatusBadRequest, "id inválido"); return }
-	if err := m.Servicio.Borrar(id); err != nil { responderError(w, err); return }
+	if !ok {
+		respuesta.Error(w, http.StatusBadRequest, "id inválido")
+		return
+	}
+	if err := m.Servicio.Borrar(id); err != nil {
+		responderError(w, err)
+		return
+	}
 	respuesta.JSON(w, http.StatusOK, map[string]uint{"borrada": id})
 }
 
 func (m *Tareas) listarCategorias(w http.ResponseWriter, r *http.Request) {
 	lista, err := m.Servicio.ListarCategorias()
-	if err != nil { responderError(w, err); return }
+	if err != nil {
+		responderError(w, err)
+		return
+	}
 	respuesta.JSON(w, http.StatusOK, lista)
 }

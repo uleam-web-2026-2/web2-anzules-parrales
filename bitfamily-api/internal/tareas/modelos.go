@@ -10,6 +10,7 @@ type Categoria struct {
 type Tarea struct {
 	ID          uint
 	CategoriaID uint
+	Dueno       string
 	Descripcion string
 	Recompensa  int
 	Estado      string

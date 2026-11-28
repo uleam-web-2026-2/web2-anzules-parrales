@@ -1,4 +1,5 @@
 package transporte
+
 import "bitfamily-api/internal/tareas"
 
 type TareaPeticion struct {
@@ -8,17 +9,29 @@ type TareaPeticion struct {
 }
 
 func (p TareaPeticion) aEntidad() tareas.Tarea {
-	return tareas.Tarea{CategoriaID: p.CategoriaID, Descripcion: p.Descripcion, Recompensa: p.Recompensa}
+	return tareas.Tarea{
+		CategoriaID: p.CategoriaID,
+		Descripcion: p.Descripcion,
+		Recompensa:  p.Recompensa,
+	}
 }
 
 type TareaRespuesta struct {
 	ID          uint   `json:"id"`
 	CategoriaID uint   `json:"categoria_id"`
+	Dueno       string `json:"dueno,omitempty"`
 	Descripcion string `json:"descripcion"`
 	Recompensa  int    `json:"recompensa"`
 	Estado      string `json:"estado"`
 }
 
 func nuevaRespuesta(t tareas.Tarea) TareaRespuesta {
-	return TareaRespuesta{ID: t.ID, CategoriaID: t.CategoriaID, Descripcion: t.Descripcion, Recompensa: t.Recompensa, Estado: t.Estado}
+	return TareaRespuesta{
+		ID:          t.ID,
+		CategoriaID: t.CategoriaID,
+		Dueno:       t.Dueno,
+		Descripcion: t.Descripcion,
+		Recompensa:  t.Recompensa,
+		Estado:      t.Estado,
+	}
 }
