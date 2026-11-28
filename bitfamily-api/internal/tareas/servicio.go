@@ -11,9 +11,9 @@ func NuevoServicio(repo Repositorio) *Servicio { return &Servicio{repo: repo} }
 
 func (s *Servicio) AvisarCon(a Avisador) { s.avisos = a }
 
-func (s *Servicio) Listar(estado string) ([]Tarea, error) { return s.repo.Listar(estado) }
-func (s *Servicio) Buscar(id uint) (Tarea, error) { return s.repo.Buscar(id) }
-func (s *Servicio) Borrar(id uint) error { return s.repo.Borrar(id) }
+func (s *Servicio) Listar(estado string) ([]Tarea, error)  { return s.repo.Listar(estado) }
+func (s *Servicio) Buscar(id uint) (Tarea, error)          { return s.repo.Buscar(id) }
+func (s *Servicio) Borrar(id uint) error                   { return s.repo.Borrar(id) }
 func (s *Servicio) ListarCategorias() ([]Categoria, error) { return s.repo.ListarCategorias() }
 
 func (s *Servicio) Crear(t Tarea) (Tarea, error) {
