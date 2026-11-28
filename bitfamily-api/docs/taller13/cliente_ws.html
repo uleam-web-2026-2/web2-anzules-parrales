@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>BitFamily - Cliente WebSocket (Taller 13)</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    .row { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    pre { background: #111; color: #eee; padding: 1rem; border-radius: 6px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>BitFamily — Avisos en tiempo real</h1>
+
+  <div class="row">
+    <label>Usuario:</label>
+    <select id="usuario">
+      <option value="ana" selected>ana (token-ana)</option>
+      <option value="eva">eva (token-eva)</option>
+    </select>
+    <button id="btnConectar" type="button">Conectar</button>
+    <button id="btnRefrescar" type="button">Refrescar tareas</button>
+    <span id="estadoWs">Desconectado</span>
+  </div>
+
+  <h3>Tareas actuales</h3>
+  <pre id="listaTareas">Cargando...</pre>
+
+  <h3>Log de eventos</h3>
+  <pre id="logEventos"></pre>
+
+  <script>
+    const API_BASE = "http://localhost:8090";
+    const WS_BASE = "ws://localhost:8090";
+
+    let socket = null;
+    let reconectarTimer = null;
+    let cierreManual = false;
+
+    const selUsuario = document.getElementById("usuario");
+    const estadoWs = document.getElementById("estadoWs");
+    const listaTareas = document.getElementById("listaTareas");
+    const logEventos = document.getElementById("logEventos");
+
+    function log(msg) {
+      const hora = new Date().toLocaleTimeString();
+      logEventos.textContent = `[${hora}] ${msg}\n` + logEventos.textContent;
+    }
+
+    async function refrescarTareas() {
+      try {
+        const res = await fetch(`${API_BASE}/tareas`);
+        const data = await res.json();
+        const filtradas = Array.isArray(data)
+          ? data.filter((t) => !t.dueno || t.dueno === selUsuario.value)
+          : data;
+        listaTareas.textContent = JSON.stringify(filtradas, null, 2);
+      } catch (err) {
+        listaTareas.textContent = `Error al consultar tareas: ${err.message}`;
+      }
+    }
+
+    function programarReconexion() {
+      if (cierreManual || reconectarTimer) return;
+      reconectarTimer = setTimeout(() => {
+        reconectarTimer = null;
+        conectar();
+      }, 2000);
+    }
+
+    function conectar() {
+      clearTimeout(reconectarTimer);
+      reconectarTimer = null;
+      cierreManual = false;
+
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        cierreManual = true;
+        socket.close();
+        cierreManual = false;
+      }
+
+      const token = `token-${selUsuario.value}`;
+      const url = `${WS_BASE}/ws?token=${encodeURIComponent(token)}`;
+      estadoWs.textContent = "Conectando...";
+      socket = new WebSocket(url);
+
+      socket.onopen = () => {
+        estadoWs.textContent = `Conectado (${selUsuario.value})`;
+        log(`Conectado a ${url}`);
+        refrescarTareas();
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const aviso = JSON.parse(event.data);
+          if (aviso.dueno && aviso.dueno !== selUsuario.value) {
+            log(`Aviso ignorado por dueño (${aviso.dueno}): ${event.data}`);
+            return;
+          }
+          log(`Aviso recibido: ${event.data}`);
+          refrescarTareas();
+        } catch {
+          log(`Mensaje recibido: ${event.data}`);
+        }
+      };
+
+      socket.onclose = (ev) => {
+        estadoWs.textContent = "Desconectado";
+        log(`Conexión cerrada (código ${ev.code})`);
+        programarReconexion();
+      };
+
+      socket.onerror = () => {
+        log("Error en el socket");
+      };
+    }
+
+    document.getElementById("btnConectar").addEventListener("click", () => {
+      cierreManual = true;
+      if (socket) socket.close();
+      conectar();
+    });
+
+    document.getElementById("btnRefrescar").addEventListener("click", refrescarTareas);
+    selUsuario.addEventListener("change", () => {
+      cierreManual = true;
+      if (socket) socket.close();
+      conectar();
+    });
+
+    refrescarTareas();
+    conectar();
+  </script>
+</body>
+</html>
