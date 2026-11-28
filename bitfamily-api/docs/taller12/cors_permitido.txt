@@ -1,0 +1,9 @@
+HTTP/1.1 405 Method Not Allowed
+Allow: PATCH
+Allow: DELETE
+Allow: GET
+Allow: PUT
+Date: Sat, 28 Nov 2026 07:42:27 GMT
+Content-Length: 0
+
+

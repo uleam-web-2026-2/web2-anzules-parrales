@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"bitfamily-api/internal/almacen"
 	"bitfamily-api/internal/tareas"
@@ -11,9 +13,35 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+func obtenerOrigenesPermitidos() []string {
+	raw := os.Getenv("CORS_ORIGINS")
+	if strings.TrimSpace(raw) == "" {
+		return []string{
+			"http://localhost:5173",
+			"http://localhost:3000",
+			"http://localhost:8090",
+		}
+	}
+
+	partes := strings.Split(raw, ",")
+	origenes := make([]string, 0, len(partes))
+	for _, p := range partes {
+		limpio := strings.TrimSpace(p)
+		if limpio != "" {
+			origenes = append(origenes, limpio)
+		}
+	}
+	if len(origenes) == 0 {
+		return []string{"http://localhost:5173"}
+	}
+	return origenes
+}
 
 func main() {
 	// 1. Leemos la cadena de conexión desde las variables de entorno
@@ -40,6 +68,19 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// Fase 2: Configuración CORS
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   obtenerOrigenesPermitidos(),
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	// Fase 3: Rate Limiting por IP (ej. 60 peticiones por minuto)
+	r.Use(httprate.LimitByIP(60, time.Minute))
 
 	// Obtener la conexión subyacente para sqlc
 	conexion, err := db.DB()
