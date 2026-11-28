@@ -1,0 +1,7 @@
+2026/11/28 03:11:13 "GET http://localhost:8090/categorias HTTP/1.1" from [::1]:58452 - 200 219B in 1.7997ms
+2026/11/28 03:11:16 "GET http://localhost:8090/tareas HTTP/1.1" from [::1]:58453 - 200 184B in 1.0357ms
+2026/11/28 03:11:19 "POST http://localhost:8090/tareas HTTP/1.1" from [::1]:58454 - 201 90B in 12.5489ms
+2026/11/28 03:11:21 "GET http://localhost:8090/tareas/1 HTTP/1.1" from [::1]:58455 - 200 92B in 684.5µs
+2026/11/28 03:11:23 "PUT http://localhost:8090/tareas/1 HTTP/1.1" from [::1]:58456 - 400 27B in 0s
+2026/11/28 03:12:13 "PUT http://localhost:8090/tareas/1 HTTP/1.1" from [::1]:63073 - 400 27B in 0s
+2026/11/28 03:13:34 "PATCH http://localhost:8090/tareas/1 HTTP/1.1" from [::1]:55952 - 422 85B in 538.3µs

@@ -1,5 +1,17 @@
 # Decisiones de Arquitectura – BitFamily API
+## Semana 12 la seguridad de la API
 
+### D1 Lo que encontramos y cerramos
+Al revisar `docs/taller12/auditoria.md` (generado con `git grep -n -E -f docs/taller12/patrones.txt "*.go" ":(exclude)*_test.go"`), se identificaron las líneas que manipulan consultas o comandos SQL y las que son falsos positivos (mensajes de error o configuración). Las consultas reales se ejecutan mediante `sqlc` (con parámetros posicionales `$1`) y GORM (con marcadores `?` e identificadores numéricos parseados previamente con `strconv.Atoi`), sin concatenar datos del usuario con `+` ni `fmt.Sprintf`. Por ello no se requirieron cambios en las consultas SQL, y en `docs/taller12/inyeccion.txt` se comprobó que las entradas maliciosas no alteran la lógica ni exponen datos adicionales.
+
+### D2 El origen que puede leer nuestras respuestas
+Se configuró `AllowedOrigins` con `http://localhost:5173` (el origen del frontend de desarrollo) en lugar de `"*"` siguiendo el principio de mínimo privilegio para evitar que sitios no autorizados lean respuestas desde el navegador. El middleware `cors.Handler` se colocó arriba de todo, justo después de `r := chi.NewRouter()` y antes de otros middlewares y rutas, para que las peticiones previas `OPTIONS` se respondan de inmediato sin ser bloqueadas ni requerir autenticación. En `docs/taller12/cors_curl_ejecuta.txt` se observa que `curl` desde `http://malo.example` sí envía y recibe respuesta porque CORS es una política que aplican los navegadores, no un cliente de línea de comandos como `curl`. Cuando el frontend pase a producción, se deberá reemplazar `http://localhost:5173` por el origen `https://` definitivo de producción.
+
+### D3 El límite del login
+Se configuró el rate limit por IP con `httprate` (tope de 5 peticiones por ventana de 1 minuto) junto con `middleware.ClientIPFromRemoteAddr` y `porIP`, aplicándolo de forma acotada y no como `r.Use(...)` global sobre toda la API para no interrumpir las pruebas normales en Bruno. En BitFamily aún no existe una ruta `POST /login` (las rutas activas corresponden a categorías y tareas), por lo que este criterio queda definido para proteger el endpoint de inicio de sesión cuando se implemente, devolviendo `429 Too Many Requests` y la cabecera `Retry-After` al exceder el límite.
+
+### D4 Detrás de un proxy
+`middleware.ClientIPFromRemoteAddr` obtiene la IP desde `r.RemoteAddr` (la dirección remota de la conexión TCP directa) y la almacena en el contexto. Si la API queda detrás de un proxy inverso o balanceador de carga sin una configuración adecuada de confianza, `r.RemoteAddr` corresponderá a la IP del proxy y no a la de cada cliente real, haciendo que todos compartan el mismo contador y se bloqueen entre sí. Aun así, no debe confiarse ciegamente en `X-Forwarded-For` porque cualquier cliente puede falsificar esa cabecera para saltarse el límite; solo debe consultarse si el servidor verifica explícitamente que la petición proviene de un proxy de confianza.
 ## Semana 8: Estructura en Capas
 
 Para cumplir con los principios de responsabilidad única y separación de conceptos en nuestra API, hemos organizado el código de la entidad principal (`tareas`) en las siguientes capas dentro del directorio `internal/`:

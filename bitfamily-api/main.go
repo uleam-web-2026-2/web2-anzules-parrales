@@ -4,8 +4,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
-	"time"
 
 	"bitfamily-api/internal/almacen"
 	"bitfamily-api/internal/tareas"
@@ -19,28 +17,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func obtenerOrigenesPermitidos() []string {
-	raw := os.Getenv("CORS_ORIGINS")
-	if strings.TrimSpace(raw) == "" {
-		return []string{
-			"http://localhost:5173",
-			"http://localhost:3000",
-			"http://localhost:8090",
-		}
-	}
-
-	partes := strings.Split(raw, ",")
-	origenes := make([]string, 0, len(partes))
-	for _, p := range partes {
-		limpio := strings.TrimSpace(p)
-		if limpio != "" {
-			origenes = append(origenes, limpio)
-		}
-	}
-	if len(origenes) == 0 {
-		return []string{"http://localhost:5173"}
-	}
-	return origenes
+func porIP(r *http.Request) (string, error) {
+	ip := middleware.GetClientIP(r.Context())
+	return httprate.CanonicalizeIP(ip), nil
 }
 
 func main() {
@@ -66,21 +45,22 @@ func main() {
 
 	// 3. Rutas y Middlewares
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
 
-	// Fase 2: Configuración CORS
+	// CORS arriba de todo: responde las peticiones previas (OPTIONS).
+	// Mínimo privilegio: se nombra el front, no "*".
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   obtenerOrigenesPermitidos(),
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
+		AllowedOrigins: []string{"http://localhost:5173"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
+		MaxAge:         300,
 	}))
 
-	// Fase 3: Rate Limiting por IP (ej. 60 peticiones por minuto)
-	r.Use(httprate.LimitByIP(60, time.Minute))
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.ClientIPFromRemoteAddr)
+
+	// Si en el futuro se agrega POST /login, se protege con límite por IP:
+	// r.With(httprate.Limit(5, time.Minute, porIP)).Post("/login", ...)
 
 	// Obtener la conexión subyacente para sqlc
 	conexion, err := db.DB()
