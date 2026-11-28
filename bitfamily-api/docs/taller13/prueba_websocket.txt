@@ -1,0 +1,8 @@
+=== RUN   TestWebSocketSinTokenDa401
+--- PASS: TestWebSocketSinTokenDa401 (0.00s)
+=== RUN   TestWebSocketOtroOrigenDa403
+--- PASS: TestWebSocketOtroOrigenDa403 (0.00s)
+=== RUN   TestAvisoLlegaSoloADueno
+--- PASS: TestAvisoLlegaSoloADueno (0.40s)
+PASS
+ok  	bitfamily-api/internal/transporte	1.970s

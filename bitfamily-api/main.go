@@ -17,6 +17,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const origenFront = "http://localhost:5173"
+
 func porIP(r *http.Request) (string, error) {
 	ip := middleware.GetClientIP(r.Context())
 	return httprate.CanonicalizeIP(ip), nil
@@ -49,7 +51,7 @@ func main() {
 	// CORS arriba de todo: responde las peticiones previas (OPTIONS).
 	// Mínimo privilegio: se nombra el front, no "*".
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"http://localhost:5173"},
+		AllowedOrigins: []string{origenFront},
 		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 		MaxAge:         300,
@@ -58,9 +60,6 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.ClientIPFromRemoteAddr)
-
-	// Si en el futuro se agrega POST /login, se protege con límite por IP:
-	// r.With(httprate.Limit(5, time.Minute, porIP)).Post("/login", ...)
 
 	// Obtener la conexión subyacente para sqlc
 	conexion, err := db.DB()
@@ -71,7 +70,12 @@ func main() {
 	// Inicializamos el repositorio de sqlc que incrusta a GORM
 	repo := almacen.NuevoTareasSqlc(&almacen.Tareas{DB: db}, conexion)
 	servicio := tareas.NuevoServicio(repo)
+
+	avisos := transporte.NuevosAvisos(origenFront)
+	servicio.AvisarCon(avisos)
+
 	(&transporte.Tareas{Servicio: servicio}).Rutas(r)
+	r.Get("/ws", avisos.Conectar)
 
 	// 4. Leemos el puerto desde las variables de entorno
 	puerto := os.Getenv("PUERTO")
